@@ -1,5 +1,6 @@
 from googletrans import Translator
 import requests
+from sqlalchemy import text
 import telebot
 import telebot.apihelper
 
@@ -44,8 +45,9 @@ def get_meal_url(meal_name):
     последующего осуществления запроса.
     """
     translator = Translator()
-    meal_name = str(translator.translate(meal_name).text)
-    url = f'{MEAL_BASE_URL}{meal_name}'
+    print(translator.translate(meal_name))
+    translated_meal_name = str(translator.translate(meal_name).text)
+    url = f'{MEAL_BASE_URL}{translated_meal_name}'
     return url
 
 
@@ -54,13 +56,6 @@ def get_meal_info(meal_name):
     url = get_meal_url(meal_name)
     response = requests.get(url)
     return response
-
-
-def get_meal_url(meal_name, latitude, longitude):
-    """Возвращает url адрес googlemaps для 
-    запрашиваемого города и его координат.
-    """
-    return f'{MEAL_BASE_URL}{meal_name}/@{latitude},{longitude}'
 
 
 def send_search_failed(message):
@@ -76,16 +71,41 @@ def get_meal_name(message):
     блюда в зависимости от успешности поиска.
     """
     meal_name = message.text
-    response = get_city_info(meal_name)
+    response = get_meal_info(meal_name)
     if response.status_code == 200:
         data = response.json()
+        product_list = list()
+        measure_list = list()
         try:
-            latitude = data[0].get('latitude')
-            longitude = data[0].get('longitude')
+            ingridients = data["meals"][0]
+            extra_fields = ['idMeal',
+                            'strMeal',
+                            'strCategory',
+                            'strDrinkAlternate',
+                            'strCategory',
+                            'strArea',
+                            'strInstructions',
+                            'strMealThumb',
+                            'strTags',
+                            'strYoutube',
+                            'strSource',
+                            'strImageSource',
+                            'strCreativeCommonsConfirmed',
+                            'dateModified']
+            for ingridient in ingridients:
+                if ingridient not in extra_fields and ingridient.startswith('strIngredient') and ingridients.get(ingridient):
+                    product_list.append(ingridients.get(ingridient))
+            print(product_list)
+
+            for ingridient in ingridients:
+                if ingridient not in extra_fields and ingridient.startswith('strMeasure') and ingridients.get(ingridient):
+                    measure_list.append(ingridients.get(ingridient))
+            print(measure_list) 
+            zipped_list = zip(product_list, measure_list)
+            print(list(zipped_list))    
         except IndexError:
             print('Блюдо не найдено')
             send_search_failed(message)
-        map_url = get_meal_url(meal_name, latitude, longitude)
         msg_text = (
             f'Город {meal_name} расположен по следующим координатам:\n'
             f'Широта: {latitude}\nДолгота: {longitude}.\nСсылка: {map_url}'
