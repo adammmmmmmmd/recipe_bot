@@ -101,14 +101,14 @@ def get_meal_name(message):
                 if ingridient not in extra_fields and ingridient.startswith('strMeasure') and ingridients.get(ingridient):
                     measure_list.append(ingridients.get(ingridient))
             print(measure_list) 
-            zipped_list = zip(product_list, measure_list)
-            print(list(zipped_list))    
+            zipped_product_list = zip(product_list, measure_list)
+            zipped_product_list = list(zipped_product_list)
+            print(zipped_product_list)
         except IndexError:
             print('Блюдо не найдено')
             send_search_failed(message)
         msg_text = (
-            f'Город {meal_name} расположен по следующим координатам:\n'
-            f'Широта: {latitude}\nДолгота: {longitude}.\nСсылка: {map_url}'
+            f'Рецепт {meal_name}:\nИнгридиенты:\n{list(zipped_product_list)}'
         )
         bot.reply_to(message, msg_text)
     else:
